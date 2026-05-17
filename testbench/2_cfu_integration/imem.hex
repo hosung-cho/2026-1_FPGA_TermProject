@@ -1,0 +1,116 @@
+// CNN-CFU Integration Test Program (imem.hex)
+// Address   Instruction   Assembly                        Description
+//
+// === Setup: load test data into registers using LW from dmem ===
+// dmem[0] = 0x04030201  → {4,3,2,1}  packed bytes for MAC4 input
+// dmem[1] = 0x05040302  → {5,4,3,2}  packed bytes for MAC4 weight
+// dmem[2] = 0xFFFFFFFF  → -1         for RELU negative test
+// dmem[3] = 0x00000A05  → {0,0,10,5} for MAXPOOL2 rs1
+// dmem[4] = 0x0000030F  → {0,0,3,15} for MAXPOOL2 rs2
+// dmem[5] = 0x00000800  → 2048       for RESCALE input
+// dmem[6] = 0x01010101  → {1,1,1,1}  for accumulation test
+// dmem[7] = 0x02020202  → {2,2,2,2}  for accumulation test
+// dmem[8] = 0x03030303  → {3,3,3,3}  for accumulation test
+// dmem[9] = 0x0A141E28  → {10,20,30,40} for chain test
+// dmem[10]= 0x00000005  → 5 (shift amount for RESCALE)
+// dmem[11]= 0x00000002  → 2 (shift amount for chain test)
+
+// --- Addr 0x00: LW x1, 0(x0)    - load {4,3,2,1} into x1
+00002083
+// --- Addr 0x04: LW x2, 4(x0)    - load {5,4,3,2} into x2
+00402103
+// --- Addr 0x08: LW x3, 8(x0)    - load -1 into x3
+00802183
+// --- Addr 0x0C: LW x4, 12(x0)   - load {0,0,10,5} into x4
+00C02203
+// --- Addr 0x10: LW x5, 16(x0)   - load {0,0,3,15} into x5
+01002283
+// --- Addr 0x14: LW x6, 20(x0)   - load 2048 into x6
+01402303
+// --- Addr 0x18: LW x7, 24(x0)   - load {1,1,1,1} into x7
+01802383
+// --- Addr 0x1C: LW x8, 28(x0)   - load {2,2,2,2} into x8
+01C02403
+// --- Addr 0x20: LW x9, 32(x0)   - load {3,3,3,3} into x9
+02002483
+// --- Addr 0x24: LW x20, 36(x0)  - load {10,20,30,40} into x20
+02402A03
+// --- Addr 0x28: LW x21, 40(x0)  - load 5 (shift) into x21
+02802A83
+// --- Addr 0x2C: LW x22, 44(x0)  - load 2 (shift) into x22
+02C02B03
+
+// === Test 1: MAC4 ===
+// x10 = MAC4(x1, x2) = dot4({4,3,2,1}, {5,4,3,2}) = 40
+// Encoding: funct7=0000000 rs2=00010 rs1=00001 funct3=000 rd=01010 opcode=0001011
+// = 0000000_00010_00001_000_01010_0001011 = 0x0020850B
+0020850B
+
+// === Test 2: RELU(positive) ===
+// x11 = RELU(x10)  (x10=40, positive → 40)
+// Encoding: funct7=0000001 rs2=00000 rs1=01010 funct3=000 rd=01011 opcode=0001011
+// = 0000001_00000_01010_000_01011_0001011 = 0x0205058B
+0205058B
+
+// === Test 3: RELU(negative) ===
+// x12 = RELU(x3)  (x3=-1, negative → 0)
+// Encoding: funct7=0000001 rs2=00000 rs1=00011 funct3=000 rd=01100 opcode=0001011
+// = 0000001_00000_00011_000_01100_0001011 = 0x0201860B
+0201860B
+
+// === Test 4: MAXPOOL2 ===
+// x13 = MAXPOOL2(x4, x5) = max(5,10,15,3) = 15
+// Encoding: funct7=0000010 rs2=00101 rs1=00100 funct3=000 rd=01101 opcode=0001011
+// = 0000010_00101_00100_000_01101_0001011 = 0x0452068B
+0452068B
+
+// === Test 5: CLRACC ===
+// x14 = CLRACC = 0
+// Encoding: funct7=0000011 rs2=00000 rs1=00000 funct3=000 rd=01110 opcode=0001011
+// = 0000011_00000_00000_000_01110_0001011 = 0x0600070B
+0600070B
+
+// === Test 6: RESCALE ===
+// x15 = RESCALE(x6, x21) = rescale(2048, 5) = (2048+16)>>5 = 64
+// Encoding: funct7=0000100 rs2=10101 rs1=00110 funct3=000 rd=01111 opcode=0001011
+// = 0000100_10101_00110_000_01111_0001011 = 0x0953078B
+0953078B
+
+// === Test 7: MAC4 + ADD accumulation ===
+// x16 = 0 (CLRACC)
+// Encoding: funct7=0000011 rs2=00000 rs1=00000 funct3=000 rd=10000 opcode=0001011
+// = 0000011_00000_00000_000_10000_0001011 = 0x0600080B
+0600080B
+// x18 = MAC4(x7, x8) = dot4({1,1,1,1},{2,2,2,2}) = 8
+// Encoding: funct7=0000000 rs2=01000 rs1=00111 funct3=000 rd=10010 opcode=0001011
+// = 0000000_01000_00111_000_10010_0001011 = 0x0083890B  (wait, let me recalculate)
+// rs2=x8=01000, rs1=x7=00111, rd=x18=10010
+// = 0000000_01000_00111_000_10010_0001011 = 0x0083890B
+0083890B
+// ADD x16, x16, x18  → x16 = 0 + 8 = 8
+// Encoding: 0000000_10010_10000_000_10000_0110011 = 0x01280833
+01280833
+// x18 = MAC4(x9, x7) = dot4({3,3,3,3},{1,1,1,1}) = 12
+// rs2=x7=00111, rs1=x9=01001, funct7=0000000, rd=x18=10010
+// = 0000000_00111_01001_000_10010_0001011 = 0x0074890B
+0074890B
+// ADD x16, x16, x18  → x16 = 8 + 12 = 20
+01280833
+
+// === Test 8: MAC4 → RESCALE → RELU chain ===
+// x18 = MAC4(x20, x7) = dot4({10,20,30,40},{1,1,1,1}) = 100
+// rs2=x7=00111, rs1=x20=10100, funct7=0000000, rd=x18=10010
+// = 0000000_00111_10100_000_10010_0001011 = 0x007A090B
+007A090B
+// x18 = RESCALE(x18, x22) = rescale(100, 2) = (100+2)>>2 = 25
+// rs2=x22=10110, rs1=x18=10010, funct7=0000100, rd=x18=10010
+// = 0000100_10110_10010_000_10010_0001011 = 0x0969090B
+0969090B
+// x17 = RELU(x18) = relu(25) = 25
+// funct7=0000001, rs2=x0=00000, rs1=x18=10010, rd=x17=10001
+// = 0000001_00000_10010_000_10001_0001011 = 0x0209088B
+0209088B
+
+// === HALT ===
+// JAL x0, 0 (infinite loop = halt signal)
+0000006F

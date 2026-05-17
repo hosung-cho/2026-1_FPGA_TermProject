@@ -1,0 +1,26 @@
+// CNN-CFU Integration Test Data Memory (dmem.hex)
+// Addr  Value       Description
+// 0x00  {4,3,2,1}   MAC4 input
+04030201
+// 0x04  {5,4,3,2}   MAC4 weight
+05040302
+// 0x08  -1 (0xFFFFFFFF)  RELU neg test
+FFFFFFFF
+// 0x0C  {0,0,10,5}  MAXPOOL2 rs1
+00000A05
+// 0x10  {0,0,3,15}  MAXPOOL2 rs2
+0000030F
+// 0x14  2048        RESCALE input
+00000800
+// 0x18  {1,1,1,1}   accumulation test
+01010101
+// 0x1C  {2,2,2,2}   accumulation test
+02020202
+// 0x20  {3,3,3,3}   accumulation test
+03030303
+// 0x24  {10,20,30,40} chain test
+0A141E28
+// 0x28  5           shift for RESCALE
+00000005
+// 0x2C  2           shift for chain
+00000002
