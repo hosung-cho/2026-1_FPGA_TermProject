@@ -1,0 +1,4 @@
+CNN_ALU_Top_mux_3bkb
+CNN_ALU_Top_mux_8cud
+CNN_ALU_Top_mac_mdEe
+CNN_ALU_Top
