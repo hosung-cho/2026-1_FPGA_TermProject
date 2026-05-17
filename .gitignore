@@ -1,0 +1,4 @@
+sim_workspace/
+.Xil/
+*.jou
+*.log
