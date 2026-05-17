@@ -1,0 +1,12 @@
+// Filter 0: expected=0
+00000000
+// Filter 1: expected=61
+0000003D
+// Filter 2: expected=255
+000000FF
+// Filter 3: expected=255
+000000FF
+// Filter 4: expected=0
+00000000
+// Filter 5: expected=63
+0000003F
