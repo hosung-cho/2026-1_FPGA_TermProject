@@ -28,10 +28,10 @@ module cnn_cfu (
     wire signed [15:0] prod0, prod1, prod2, prod3;
     wire signed [31:0] mac4_result;
     
-    assign prod0 = $signed(rs1_data[ 7: 0]) * $signed(rs2_data[ 7: 0]);
-    assign prod1 = $signed(rs1_data[15: 8]) * $signed(rs2_data[15: 8]);
-    assign prod2 = $signed(rs1_data[23:16]) * $signed(rs2_data[23:16]);
-    assign prod3 = $signed(rs1_data[31:24]) * $signed(rs2_data[31:24]);
+    assign prod0 = $signed({1'b0, rs1_data[ 7: 0]}) * $signed(rs2_data[ 7: 0]);
+    assign prod1 = $signed({1'b0, rs1_data[15: 8]}) * $signed(rs2_data[15: 8]);
+    assign prod2 = $signed({1'b0, rs1_data[23:16]}) * $signed(rs2_data[23:16]);
+    assign prod3 = $signed({1'b0, rs1_data[31:24]}) * $signed(rs2_data[31:24]);
     
     // sign-extend each 16-bit product to 32-bit before summing
     assign mac4_result = {{16{prod0[15]}}, prod0}
