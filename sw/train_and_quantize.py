@@ -203,6 +203,14 @@ def export_for_hw(params, model_q, output_dir, data_dir):
     print("=" * 60)
 
     # C Header
+    # Map each layer to its correct input scale (which is the output scale of the previous layer)
+    layer_in_scales = {
+        'conv1': float(model_q.quant.scale),
+        'conv2': float(model_q.conv1.scale),
+        'fc1': float(model_q.conv2.scale),
+        'fc2': float(model_q.fc1.scale),
+        'fc3': float(model_q.fc2.scale),
+    }
     hp = os.path.join(output_dir, 'weights.h')
     with open(hp, 'w') as f:
         f.write("// LeNet-5 INT8 Weights (PyTorch Static Quantization)\n")
@@ -220,8 +228,12 @@ def export_for_hw(params, model_q, output_dir, data_dir):
             b_fp32 = p['bias_fp32']
             ws = p['weight_scale'][0]
             
-            # Quantize bias to int32 using input_scale * weight_scale
-            b_scale = float(inp_scale) * ws
+            # Get correct input scale for this layer
+            cur_in_scale = layer_in_scales[name]
+            p['in_scale'] = cur_in_scale
+            
+            # Quantize bias to int32 using cur_in_scale * weight_scale
+            b_scale = cur_in_scale * ws
             b_int32 = np.round(b_fp32 / b_scale).astype(np.int32)
             p['bias_int32'] = b_int32  # store for HEX export
             
@@ -230,7 +242,7 @@ def export_for_hw(params, model_q, output_dir, data_dir):
             layer = getattr(model_q, name)
             out_scale = float(layer.scale) if hasattr(layer, 'scale') else 1.0
             
-            M = float(inp_scale) * ws / out_scale if out_scale > 0 else 1.0
+            M = cur_in_scale * ws / out_scale if out_scale > 0 else 1.0
             if M > 0 and M < 1:
                 shift = int(round(-np.log2(M)))
             elif M >= 1:

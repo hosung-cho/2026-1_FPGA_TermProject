@@ -1,23 +1,23 @@
 LeNet-5 Weight Memory Map
 ==================================================
 
-[conv1] shape=(6, 1, 5, 5) shift=10 M=0.000713
+[conv1] shape=(6, 1, 5, 5) shift=10 M=0.000741
   w: 0x0000 (150 bytes)
   b: 0x0098 (6 x int32)
 
-[conv2] shape=(16, 6, 5, 5) shift=13 M=0.000135
+[conv2] shape=(16, 6, 5, 5) shift=10 M=0.000893
   w: 0x00B0 (2400 bytes)
   b: 0x0A10 (16 x int32)
 
-[fc1] shape=(120, 256) shift=14 M=0.000075
+[fc1] shape=(120, 256) shift=9 M=0.001529
   w: 0x0A50 (30720 bytes)
   b: 0x8250 (120 x int32)
 
-[fc2] shape=(84, 120) shift=14 M=0.000063
+[fc2] shape=(84, 120) shift=9 M=0.002616
   w: 0x8430 (10080 bytes)
   b: 0xAB90 (84 x int32)
 
-[fc3] shape=(10, 84) shift=14 M=0.000057
+[fc3] shape=(10, 84) shift=9 M=0.002228
   w: 0xACE0 (840 bytes)
   b: 0xB028 (10 x int32)
 
