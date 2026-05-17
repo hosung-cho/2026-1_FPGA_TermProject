@@ -2,3 +2,5 @@ sim_workspace/
 .Xil/
 *.jou
 *.log
+
+.venv

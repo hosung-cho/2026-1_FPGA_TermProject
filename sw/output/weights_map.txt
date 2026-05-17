@@ -1,0 +1,44 @@
+LeNet-5 Weight Memory Map
+==================================================
+
+[conv1]
+  weight_offset = 0x0000 (0)
+  weight_count  = 150
+  bias_offset   = 0x0098 (152)
+  bias_count    = 6
+  shift         = 9
+  shape         = (6, 1, 5, 5)
+
+[conv2]
+  weight_offset = 0x00B0 (176)
+  weight_count  = 2400
+  bias_offset   = 0x0A10 (2576)
+  bias_count    = 16
+  shift         = 12
+  shape         = (16, 6, 5, 5)
+
+[fc1]
+  weight_offset = 0x0A50 (2640)
+  weight_count  = 30720
+  bias_offset   = 0x8250 (33360)
+  bias_count    = 120
+  shift         = 12
+  shape         = (120, 256)
+
+[fc2]
+  weight_offset = 0x8430 (33840)
+  weight_count  = 10080
+  bias_offset   = 0xAB90 (43920)
+  bias_count    = 84
+  shift         = 11
+  shape         = (84, 120)
+
+[fc3]
+  weight_offset = 0xACE0 (44256)
+  weight_count  = 840
+  bias_offset   = 0xB028 (45096)
+  bias_count    = 10
+  shift         = 11
+  shape         = (10, 84)
+
+Total size: 45136 bytes (44 KB)

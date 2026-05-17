@@ -1,0 +1,10 @@
+Image 0: label=7
+Image 1: label=2
+Image 2: label=1
+Image 3: label=0
+Image 4: label=4
+Image 5: label=1
+Image 6: label=4
+Image 7: label=9
+Image 8: label=5
+Image 9: label=9
