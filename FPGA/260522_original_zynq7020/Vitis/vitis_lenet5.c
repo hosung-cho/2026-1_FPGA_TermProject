@@ -2605,7 +2605,13 @@ static void load_bram(UINTPTR base, const u32 *data, u32 word_count, u32 range_b
     }
     const u32 progress_step = 256U;
     for (u32 i = 0; i < word_count; ++i) {
+        if (i == 0U) {
+            xil_printf("[Host] load_bram: about to write first word to base=0x%08x\n\r", (unsigned)(base));
+        }
         Xil_Out32(base + (i * 4U), data[i]);
+        if (i == 0U) {
+            xil_printf("[Host] load_bram: first word written to base=0x%08x\n\r", (unsigned)(base));
+        }
         if ((i % progress_step) == 0U) {
             xil_printf("[Host] load_bram: base=0x%08x written %lu/%lu\n\r", (unsigned)(base), (unsigned long)(i), (unsigned long)word_count);
         }
@@ -2614,24 +2620,19 @@ static void load_bram(UINTPTR base, const u32 *data, u32 word_count, u32 range_b
 }
 
 static void gpio_reset_init(void) {
-    // AXI GPIO: 0 = output, 1 = input
-    if (/* runtime skip flag */ 0) {
-        Xil_Out32(GPIO_BASE + GPIO_TRI_OFFSET, 0x00000000U);
-    } else {
-        xil_printf("[Host] gpio_reset_init: SKIPPED (unsafe on this platform)\n\r");
-    }
+    // axi_gpio_0 is already configured as a 1-bit output in the BD.
+    xil_printf("[Host] gpio_reset_init: TRI init skipped; BD already sets output mode\n\r");
 }
 
 static void gpio_reset_write(u32 value) {
-    if (/* runtime skip flag */ 0) {
-        Xil_Out32(GPIO_BASE + GPIO_DATA_OFFSET, value);
-    } else {
-        xil_printf("[Host] gpio_reset_write: SKIPPED (value=0x%08x)\n\r", value);
-    }
+    xil_printf("[Host] gpio_reset_write: value=0x%08x\n\r", value);
+    Xil_Out32(GPIO_BASE + GPIO_DATA_OFFSET, value);
 }
 
 static void reset_pulse(void) {
-    xil_printf("[Host] reset_pulse: SKIPPED (no GPIO available)\n\r");
+    gpio_reset_write(RESET_ASSERT_VALUE);
+    usleep(10);
+    gpio_reset_write(RESET_DEASSERT_VALUE);
 }
 
 static void dump_dmem_words(UINTPTR base, u32 start_word, u32 count) {
@@ -2683,7 +2684,7 @@ int main(void) {
     xil_printf("[Host] Step 7: poll status begin\n\r");
     xil_printf("[Host] Polling status...\n\r");
     u32 status = 0U;
-    const u32 max_poll = 1000000U;
+    const u32 max_poll = 10000000U;
     for (u32 i = 0; i < max_poll; ++i) {
         Xil_DCacheInvalidateRange(DMEM_BRAM_BASE + STATUS_OFFSET, 64U);
         status = Xil_In32(DMEM_BRAM_BASE + STATUS_OFFSET);
