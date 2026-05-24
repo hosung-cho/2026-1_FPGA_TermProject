@@ -15,7 +15,7 @@ int32_t __mulsi3(int32_t a, int32_t b) {
     return res;
 }
 
-// Struct to guarantee layout order in BRAM (starting at 0x00008000)
+// Struct to guarantee layout order in BRAM (starting at 0x00000000)
 struct status_block {
     volatile uint32_t status;
     volatile uint32_t predicted_label_out;
@@ -96,10 +96,10 @@ void prepare_weights() {
 }
 
 int main() {
-    prepare_weights();
-
-    /* Quick sanity write to status to verify PS<->PL BRAM accessibility from CPU */
+    /* Quick startup marker: proves CPU reached main() */
     s_block.status = 0x11111111;
+
+    prepare_weights();
 
     // 1. CONV1
     uint8_t conv1_window[28];
