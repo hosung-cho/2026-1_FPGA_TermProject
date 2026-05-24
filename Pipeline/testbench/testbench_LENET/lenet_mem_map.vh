@@ -1,0 +1,9 @@
+`ifndef LENET_MEM_MAP_VH
+`define LENET_MEM_MAP_VH
+
+`define LENET_RESULT_WORD (32'h00010F00 >> 2)
+`define LENET_DONE_WORD   (32'h00010F40 >> 2)
+`define LENET_DEBUG_WORD  (32'h0001F000 >> 2)
+`define LENET_EXPECTED_WORD (32'h00010EFC >> 2)
+
+`endif

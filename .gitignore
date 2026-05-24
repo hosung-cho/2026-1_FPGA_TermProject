@@ -1,0 +1,79 @@
+# build files
+*.o
+*.elf
+*.bin
+*.exe
+*.dll
+*.a
+*.d
+*.log
+
+# simulator
+*.vcd
+*.wlf
+*.fst
+*.vvp
+obj_dir/
+sim_external_tb
+sim_tflm_tb
+
+# vivado/xsim generated outputs
+Pipeline/sim_out/
+Single_cycle/sim_out/
+Pipeline/xsim.dir/
+Single_cycle/xsim.dir/
+Pipeline/*.jou
+Single_cycle/*.jou
+Pipeline/*.pb
+Single_cycle/*.pb
+Pipeline/*.wdb
+Single_cycle/*.wdb
+Pipeline/imem.hex
+Pipeline/dmem.hex
+Single_cycle/imem.hex
+Single_cycle/dmem.hex
+
+Single_cycle/sim/vivado/build
+Single_cycle/sim/vivado/logs
+Single_cycle/testbench/testbench_Basic/sim/sim_workspace
+Single_cycle/testbench/testbench_TFLM/sim/sim_workspace
+Pipeline/testbench/testbench_TFLM_Bootcode/sim/sim_workspace
+Pipeline/testbench/testbench_TFLM/sim/sim_workspace
+
+# per-arch TFLM sim workspace outputs
+Single_cycle/sim_tflm/imem.hex
+Single_cycle/sim_tflm/dmem.hex
+Single_cycle/sim_tflm/sim_tflm_tb
+Single_cycle/sim_tflm/sim.log
+Pipeline/sim_tflm/imem.hex
+Pipeline/sim_tflm/dmem.hex
+Pipeline/sim_tflm/sim_tflm_tb
+Pipeline/sim_tflm/sim.log
+
+# vscode
+.vscode/
+
+# temporary
+*.tmp
+
+# Vivado/HLS generated outputs
+.Xil/
+**/.Xil/
+**/build/
+**/csim/build/
+**/impl/
+**/syn/
+**/*.cache/
+**/*.hw/
+**/*.runs/
+**/*.sim/
+**/*.srcs/
+**/vivado*.jou
+**/vivado*.log
+
+# Python/cache
+__pycache__/
+*.pyc
+
+# local worktrees
+.worktree-*/
