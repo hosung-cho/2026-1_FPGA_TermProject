@@ -5,10 +5,10 @@
 #include "xil_cache.h"
 #include "sleep.h"
 
-// Base addresses from Vivado Address Editor
-#define IMEM_BRAM_BASE ((UINTPTR)0x40000000U)
-#define DMEM_BRAM_BASE ((UINTPTR)0x42000000U)
-#define GPIO_BASE      ((UINTPTR)0x41200000U)
+// Ultra96 Vivado Address Editor map
+#define IMEM_BRAM_BASE ((UINTPTR)0x00A0000000U)  // axi_bram_ctrl_0 (imem)
+#define DMEM_BRAM_BASE ((UINTPTR)0x00A2000000U)  // axi_bram_ctrl_1 (dmem)
+#define GPIO_BASE      ((UINTPTR)0x00A3000000U)  // axi_gpio_0 (reset, active-low)
 
 // Address ranges (bytes)
 #define IMEM_RANGE_BYTES (32U * 1024U)
@@ -22,10 +22,12 @@
 #define RESET_ASSERT_VALUE   0x0U
 #define RESET_DEASSERT_VALUE 0x1U
 
-// Status block layout in DMEM (matches link.ld .status_section placement)
-#define STATUS_OFFSET        0x00008000U
+// Status block starts at the DMEM image base for this generated layout.
+#define STATUS_OFFSET        0x00000000U
+#define STATUS_ALT_OFFSET    0x00008000U
 #define PRED_LABEL_OFFSET    (STATUS_OFFSET + 0x4U)
 #define STATUS_DONE_VALUE    0x12345678U
+#define STATUS_FAIL_VALUE    0xDEADBEEFU
 
 // TODO: Replace these with arrays generated from imem.hex/dmem.hex.
 static const u32 imem_image[] = {
@@ -2642,6 +2644,11 @@ static void dump_dmem_words(UINTPTR base, u32 start_word, u32 count) {
     }
 }
 
+static u32 read_status_word(UINTPTR base, u32 offset) {
+    Xil_DCacheInvalidateRange(base + offset, 64U);
+    return Xil_In32(base + offset);
+}
+
 int main(void) {
     init_platform();
     xil_printf("[Host] Zynq BRAM loader start\n\r");
@@ -2689,33 +2696,58 @@ int main(void) {
     xil_printf("[Host] Step 6 done\n\r");
 
     /* Early status read immediately after releasing reset */
-    Xil_DCacheInvalidateRange(DMEM_BRAM_BASE + STATUS_OFFSET, 64U);
-    u32 early_status = Xil_In32(DMEM_BRAM_BASE + STATUS_OFFSET);
-    xil_printf("[Host] Early status read after reset: 0x%08x\n\r", early_status);
+    u32 early_status = read_status_word(DMEM_BRAM_BASE, STATUS_OFFSET);
+    u32 early_status_alt = read_status_word(DMEM_BRAM_BASE, STATUS_ALT_OFFSET);
+    xil_printf("[Host] Early status read: offset 0x%08x -> 0x%08x\n\r", STATUS_OFFSET, early_status);
+    xil_printf("[Host] Early status read: offset 0x%08x -> 0x%08x\n\r", STATUS_ALT_OFFSET, early_status_alt);
     xil_printf("[Host] DMEM dump after reset:\n\r");
     dump_dmem_words(DMEM_BRAM_BASE, 0U, 4U);
 
     xil_printf("[Host] Step 7: poll status begin\n\r");
-    xil_printf("[Host] Polling status...\n\r");
+    xil_printf("[Host] Polling status (offset 0x0 + 0x8000)...\n\r");
     u32 status = 0U;
+    u32 status_alt = 0U;
+    u32 hit_offset = STATUS_OFFSET;
     const u32 max_poll = 200000000U;
     for (u32 i = 0; i < max_poll; ++i) {
-        Xil_DCacheInvalidateRange(DMEM_BRAM_BASE + STATUS_OFFSET, 64U);
-        status = Xil_In32(DMEM_BRAM_BASE + STATUS_OFFSET);
+        status = read_status_word(DMEM_BRAM_BASE, STATUS_OFFSET);
+        status_alt = read_status_word(DMEM_BRAM_BASE, STATUS_ALT_OFFSET);
+
         if (status == STATUS_DONE_VALUE) {
+            hit_offset = STATUS_OFFSET;
             break;
         }
+        if (status_alt == STATUS_DONE_VALUE) {
+            hit_offset = STATUS_ALT_OFFSET;
+            status = status_alt;
+            break;
+        }
+        if (status == STATUS_FAIL_VALUE || status_alt == STATUS_FAIL_VALUE) {
+            hit_offset = (status == STATUS_FAIL_VALUE) ? STATUS_OFFSET : STATUS_ALT_OFFSET;
+            status = STATUS_FAIL_VALUE;
+            break;
+        }
+
         if ((i % 100000U) == 0U) {
             usleep(1000);
+        }
+        if ((i % 20000000U) == 0U) {
+            xil_printf("[Host] poll=%lu status@0x0=0x%08x status@0x8000=0x%08x\n\r",
+                       (unsigned long)i, status, status_alt);
         }
     }
 
     if (status == STATUS_DONE_VALUE) {
-        u32 label = Xil_In32(DMEM_BRAM_BASE + PRED_LABEL_OFFSET);
-        xil_printf("[Host] DONE: status=0x%08x, predicted=%lu\n\r", status, (unsigned long)label);
-    } else {
-        xil_printf("[Host] TIMEOUT: status=0x%08x\n\r", status);
+        u32 label = Xil_In32(DMEM_BRAM_BASE + hit_offset + 0x4U);
+        xil_printf("[Host] DONE: offset=0x%08x status=0x%08x, predicted=%lu\n\r",
+                   hit_offset, status, (unsigned long)label);
+    } else if (status == STATUS_FAIL_VALUE) {
+        xil_printf("[Host] FAIL: offset=0x%08x status=0x%08x\n\r", hit_offset, status);
         dump_dmem_words(DMEM_BRAM_BASE, 0U, 16U);
+    } else {
+        xil_printf("[Host] TIMEOUT: status@0x0=0x%08x status@0x8000=0x%08x\n\r", status, status_alt);
+        dump_dmem_words(DMEM_BRAM_BASE, 0U, 16U);
+        dump_dmem_words(DMEM_BRAM_BASE, STATUS_ALT_OFFSET / 4U, 8U);
     }
 
     cleanup_platform();
