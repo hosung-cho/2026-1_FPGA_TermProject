@@ -297,19 +297,30 @@ proc create_root_design { parentCell } {
   # Create instance: clk_wiz_0, and set properties
   set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_0 ]
   set_property -dict [ list \
-   CONFIG.CLKOUT1_JITTER {187.143} \
-   CONFIG.CLKOUT1_PHASE_ERROR {164.344} \
-   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {50} \
-   CONFIG.CLKOUT2_JITTER {144.436} \
-   CONFIG.CLKOUT2_PHASE_ERROR {164.344} \
-   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {150} \
+   CONFIG.CLKOUT1_JITTER {236.428} \
+   CONFIG.CLKOUT1_PHASE_ERROR {164.985} \
+   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {25} \
+   CONFIG.CLKOUT2_JITTER {236.428} \
+   CONFIG.CLKOUT2_PHASE_ERROR {164.985} \
+   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {25} \
+   CONFIG.CLKOUT2_REQUESTED_PHASE {90} \
    CONFIG.CLKOUT2_USED {true} \
+   CONFIG.CLKOUT3_JITTER {236.428} \
+   CONFIG.CLKOUT3_PHASE_ERROR {164.985} \
+   CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {25} \
+   CONFIG.CLKOUT3_REQUESTED_PHASE {270} \
+   CONFIG.CLKOUT3_USED {true} \
    CONFIG.CLK_OUT1_PORT {clk_cpu} \
-   CONFIG.CLK_OUT2_PORT {clk_bram} \
-   CONFIG.MMCM_CLKFBOUT_MULT_F {21.000} \
-   CONFIG.MMCM_CLKOUT0_DIVIDE_F {21.000} \
-   CONFIG.MMCM_CLKOUT1_DIVIDE {7} \
-   CONFIG.NUM_OUT_CLKS {2} \
+   CONFIG.CLK_OUT2_PORT {clk_imem} \
+   CONFIG.CLK_OUT3_PORT {clk_dmem} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {20.000} \
+   CONFIG.MMCM_CLKIN1_PERIOD {20.000} \
+   CONFIG.MMCM_CLKOUT0_DIVIDE_F {40.000} \
+   CONFIG.MMCM_CLKOUT1_DIVIDE {40} \
+   CONFIG.MMCM_CLKOUT1_PHASE {90.000} \
+   CONFIG.MMCM_CLKOUT2_DIVIDE {40} \
+   CONFIG.MMCM_CLKOUT2_PHASE {270.000} \
+   CONFIG.NUM_OUT_CLKS {3} \
    CONFIG.PRIM_SOURCE {Global_buffer} \
    CONFIG.RESET_PORT {resetn} \
    CONFIG.RESET_TYPE {ACTIVE_LOW} \
@@ -469,8 +480,9 @@ proc create_root_design { parentCell } {
   connect_bd_net -net axi_gpio_0_gpio_io_o [get_bd_pins RV32I_System_0/reset] [get_bd_pins axi_gpio_0/gpio_io_o] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins RV32I_System_0/imem_rdata] [get_bd_pins blk_mem_gen_0/doutb]
   connect_bd_net -net blk_mem_gen_1_doutb [get_bd_pins RV32I_System_0/dmem_rdata] [get_bd_pins blk_mem_gen_1/doutb]
-  connect_bd_net -net clk_wiz_0_clk_bram [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins blk_mem_gen_1/clkb] [get_bd_pins clk_wiz_0/clk_bram]
   connect_bd_net -net clk_wiz_0_clk_cpu [get_bd_pins RV32I_System_0/CLOCK_50] [get_bd_pins clk_wiz_0/clk_cpu]
+  connect_bd_net -net clk_wiz_0_clk_dmem [get_bd_pins blk_mem_gen_1/clkb] [get_bd_pins clk_wiz_0/clk_dmem]
+  connect_bd_net -net clk_wiz_0_clk_imem [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins clk_wiz_0/clk_imem]
   connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins axi_bram_ctrl_1/s_axi_aclk] [get_bd_pins axi_gpio_0/s_axi_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins rst_ps7_0_50M/slowest_sync_clk]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins clk_wiz_0/resetn] [get_bd_pins processing_system7_0/FCLK_RESET0_N] [get_bd_pins rst_ps7_0_50M/ext_reset_in]
   connect_bd_net -net rst_ps7_0_50M_peripheral_aresetn [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_1/s_axi_aresetn] [get_bd_pins axi_gpio_0/s_axi_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins rst_ps7_0_50M/peripheral_aresetn]
@@ -485,7 +497,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -497,4 +508,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
