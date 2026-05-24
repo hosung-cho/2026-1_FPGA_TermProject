@@ -28,6 +28,18 @@ volatile struct status_block s_block __attribute__((section(".status_section")))
     .class_scores_out = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 
+// Progress markers for host polling while the software model runs.
+#define STATUS_START_VALUE 0x11111111U
+#define STATUS_STAGE_PREP  0x22220001U
+#define STATUS_STAGE_CONV1 0x22220002U
+#define STATUS_STAGE_POOL1 0x22220003U
+#define STATUS_STAGE_CONV2 0x22220004U
+#define STATUS_STAGE_POOL2 0x22220005U
+#define STATUS_STAGE_FC1   0x22220006U
+#define STATUS_STAGE_FC2   0x22220007U
+#define STATUS_STAGE_FC3   0x22220008U
+#define STATUS_STAGE_ARGMX 0x22220009U
+
 // Pure C Software Emulator for MAC4 (performs emulated multiplication since RV32I has no MUL)
 int32_t sw_mac4(uint32_t rs1, uint32_t rs2) {
     int32_t sum = 0;
@@ -97,9 +109,10 @@ void prepare_weights() {
 
 int main() {
     /* Quick startup marker: proves CPU reached main() */
-    s_block.status = 0x11111111;
+    s_block.status = STATUS_START_VALUE;
 
     prepare_weights();
+    s_block.status = STATUS_STAGE_PREP;
 
     // 1. CONV1
     uint8_t conv1_window[28];
@@ -152,6 +165,8 @@ int main() {
         }
     }
 
+    s_block.status = STATUS_STAGE_CONV1;
+
     // 2. POOL1
     for (int ic = 0; ic < 6; ic++) {
         for (int oh = 0; oh < 12; oh++) {
@@ -165,6 +180,8 @@ int main() {
             }
         }
     }
+
+    s_block.status = STATUS_STAGE_POOL1;
 
     // 3. CONV2
     uint8_t conv2_window[152];
@@ -202,6 +219,8 @@ int main() {
         }
     }
 
+    s_block.status = STATUS_STAGE_CONV2;
+
     // 4. POOL2
     for (int ic = 0; ic < 16; ic++) {
         for (int oh = 0; oh < 4; oh++) {
@@ -215,6 +234,8 @@ int main() {
             }
         }
     }
+
+    s_block.status = STATUS_STAGE_POOL2;
 
     // Flatten pool2_out (4x4x16 = 256 bytes)
     uint8_t pool2_flat[256];
@@ -241,6 +262,8 @@ int main() {
         fc1_out[oc] = sw_rescale(acc, FC1_SHIFT);
     }
 
+    s_block.status = STATUS_STAGE_FC1;
+
     // 6. FC2 (Linear 120 -> 84)
     for (int oc = 0; oc < 84; oc++) {
         int32_t bias = fc2_b[oc];
@@ -254,6 +277,8 @@ int main() {
 
         fc2_out[oc] = sw_rescale(acc, FC2_SHIFT);
     }
+
+    s_block.status = STATUS_STAGE_FC2;
 
     // 7. FC3 (Linear 84 -> 10)
     for (int oc = 0; oc < 10; oc++) {
@@ -270,6 +295,8 @@ int main() {
         s_block.class_scores_out[oc] = acc;
     }
 
+    s_block.status = STATUS_STAGE_FC3;
+
     // 8. Argmax
     int predicted_label = 0;
     int32_t max_score = fc3_out[0];
@@ -282,6 +309,7 @@ int main() {
     }
 
     s_block.predicted_label_out = predicted_label;
+    s_block.status = STATUS_STAGE_ARGMX;
 
     if (predicted_label == 7) {
         s_block.status = 0x12345678; // SUCCESS
