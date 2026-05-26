@@ -20,6 +20,7 @@ set reg_hb      [expr {$rv_base + 0x10}]
 set reg_pc      [expr {$rv_base + 0x14}]
 set reg_data_addr [expr {$rv_base + 0x1C}]
 set reg_read_data [expr {$rv_base + 0x20}]
+set reg_cycle_count [expr {$rv_base + 0x2C}]
 
 proc read_word {addr} {
   set line [mrd -force $addr]
@@ -125,6 +126,8 @@ for {set i 0} {$i < 200} {incr i} {
 
 set pred [read_word $reg_pred]
 set expected [read_word $reg_exp]
+set cycle_count [read_word $reg_cycle_count]
+set latency_us [expr {$cycle_count / 100.0}]
 set pass [expr {(($status & 0x3) == 0x3) && ($pred == $expected)}]
 
 fill_rect $lcd_base 480 0 0 480 272 0x00000000
@@ -148,6 +151,8 @@ puts "EXTBRAM_HEARTBEAT_RAW=[mrd -force $reg_hb]"
 puts "EXTBRAM_PC_RAW=[mrd -force $reg_pc]"
 puts "EXTBRAM_DATA_ADDR_RAW=[mrd -force $reg_data_addr]"
 puts "EXTBRAM_READ_DATA_RAW=[mrd -force $reg_read_data]"
+puts "EXTBRAM_CYCLE_COUNT=$cycle_count"
+puts "EXTBRAM_LATENCY_US_AT_100MHZ=$latency_us"
 puts "EXTBRAM_PRED=$pred"
 puts "EXTBRAM_EXPECTED=$expected"
 puts "EXTBRAM_PASS=$pass"

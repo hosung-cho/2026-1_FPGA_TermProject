@@ -73,6 +73,7 @@ module RV32I_AxiLite_Bram_Top #(
   localparam [5:0] REG_READ_DATA    = 6'h20;
   localparam [5:0] REG_WRITE_DATA   = 6'h24;
   localparam [5:0] REG_DATA_WE      = 6'h28;
+  localparam [5:0] REG_CYCLE_COUNT  = 6'h2C;
 
   wire [31:0] debug_pc;
   wire [31:0] debug_inst;
@@ -85,6 +86,7 @@ module RV32I_AxiLite_Bram_Top #(
   reg [3:0]   predicted_digit;
   reg         done_seen;
   reg [31:0]  heartbeat;
+  reg [31:0]  cycle_count;
 
   wire system_run = s_axi_aresetn && run_enable;
   assign cpu_active = run_enable;
@@ -133,13 +135,18 @@ module RV32I_AxiLite_Bram_Top #(
       predicted_digit <= 4'd0;
       done_seen       <= 1'b0;
       heartbeat       <= 32'd0;
+      cycle_count     <= 32'd0;
     end else begin
       heartbeat <= heartbeat + 32'd1;
 
       if (!run_enable) begin
         predicted_digit <= 4'd0;
         done_seen       <= 1'b0;
+        cycle_count     <= 32'd0;
       end else begin
+        if (!done_seen)
+          cycle_count <= cycle_count + 32'd1;
+
         if (debug_data_we && (debug_data_addr == LENET_RESULT_ADDR))
           predicted_digit <= debug_write_data[3:0];
 
@@ -153,6 +160,7 @@ module RV32I_AxiLite_Bram_Top #(
           if (write_data[1]) begin
             predicted_digit <= 4'd0;
             done_seen       <= 1'b0;
+            cycle_count     <= 32'd0;
           end
         end
       end
@@ -230,6 +238,7 @@ module RV32I_AxiLite_Bram_Top #(
         REG_READ_DATA:  read_register = debug_read_data;
         REG_WRITE_DATA: read_register = debug_write_data;
         REG_DATA_WE:    read_register = {31'd0, debug_data_we};
+        REG_CYCLE_COUNT: read_register = cycle_count;
         default:        read_register = 32'd0;
       endcase
     end

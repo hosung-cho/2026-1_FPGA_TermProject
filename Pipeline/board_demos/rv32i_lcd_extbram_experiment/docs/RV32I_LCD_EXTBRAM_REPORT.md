@@ -59,6 +59,12 @@ CPU reads use Port B, so the CPU still has a read path while writes go through P
 | External dmem BRAM | `0x43C40000` | 128 KB | Runtime-loadable RV32I data memory |
 | TFT-LCD framebuffer | `0x43C80000` | 512 KB | 480 x 272 RGB565 framebuffer |
 
+Additional RV32I register:
+
+| Offset | Register | Meaning |
+| ---: | --- | --- |
+| `0x2C` | cycle_count | Inference cycles from run start until done |
+
 The external dmem BRAM is configured as:
 
 ```text
@@ -75,7 +81,7 @@ Address width  = 15 word-address bits
 Latest build:
 
 ```text
-RV32I_PS_LCD_EXTBRAM_BD_WNS=0.222
+RV32I_PS_LCD_EXTBRAM_BD_WNS=0.085
 RV32I_PS_LCD_EXTBRAM_BD_TIMING_OK=1
 RV32I_PS_LCD_EXTBRAM_BD_IMPL_OK=1
 ```
@@ -89,6 +95,13 @@ EXTBRAM_STATUS_RAW=43C00004:   00000003
 EXTBRAM_PRED=7
 EXTBRAM_EXPECTED=7
 EXTBRAM_PASS=1
+```
+
+The current RTL also exposes `EXTBRAM_CYCLE_COUNT`, which can be converted to time as:
+
+```text
+latency_seconds = cycle_count / 100,000,000
+latency_us      = cycle_count / 100
 ```
 
 ## 6. Important Implementation Note
@@ -105,4 +118,3 @@ CONFIG.Enable_32bit_Address {false}
 ```
 
 The AXI BRAM Controller still exposes a 128 KB PS-accessible window, but the BRAM itself is now an independent native true dual-port memory.
-

@@ -48,9 +48,17 @@ Expected result:
 ```text
 EXTBRAM_DMEM_WORDS_WRITTEN=32768
 EXTBRAM_DMEM_BASEADDR=0x43C40000
+EXTBRAM_CYCLE_COUNT=<cycle count>
+EXTBRAM_LATENCY_US_AT_100MHZ=<cycle count / 100>
 EXTBRAM_PRED=7
 EXTBRAM_EXPECTED=7
 EXTBRAM_PASS=1
+```
+
+The cycle counter measures RV32I inference latency from run start until the done flag is observed in hardware. The design runs at 100 MHz, so:
+
+```text
+latency_us = cycle_count / 100
 ```
 
 Expected LCD output:
@@ -86,4 +94,3 @@ memory/     imem and digit-7 dmem images
 rtl/        external dmem RTL wrappers and LCD AXI wrapper snapshot
 vivado/     build, program, XSDB, and XDC scripts
 ```
-
