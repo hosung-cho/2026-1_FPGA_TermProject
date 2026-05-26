@@ -1,5 +1,5 @@
-set script_dir [file normalize [file dirname [info script]]]
-set root_dir   [file normalize [file join $script_dir ".." ".."]]
+set script_dir [file dirname [info script]]
+set root_dir   [file join $script_dir ".." ".."]
 set build_dir  [file join $script_dir "build"]
 set report_dir [file join $script_dir "reports"]
 set part_name  "xc7z020clg484-1"
@@ -35,7 +35,19 @@ read_verilog [file join $root_dir "Pipeline" "src" "rtl" "RV32I_System.v"]
 read_verilog [file join $root_dir "Pipeline" "src" "rtl" "RV32I_Board_Top.v"]
 read_xdc $xdc_file
 
-synth_design -top RV32I_Board_Top -part $part_name
+set synth_status [catch {
+  synth_design -top RV32I_Board_Top -part $part_name
+} synth_error]
+if {$synth_status != 0} {
+  if {[llength [get_ports -quiet]] == 0} {
+    puts "ERROR: synth_design failed before producing a usable synthesized design."
+    puts $synth_error
+    exit 1
+  }
+  puts "WARNING: synth_design returned an error after producing a synthesized design."
+  puts "WARNING: Continuing to implementation. Vivado message was:"
+  puts $synth_error
+}
 report_utilization -file [file join $report_dir "post_synth_util.rpt"]
 report_timing_summary -file [file join $report_dir "post_synth_timing.rpt"]
 

@@ -1,7 +1,8 @@
 `timescale 1ns/1ns
 
 module RV32I_ExternalDmem_System #(
-  parameter [31:0] CPU_RESET_PC = 32'h1000_0000
+  parameter [31:0] CPU_RESET_PC = 32'h1000_0000,
+  parameter integer ENABLE_CNN = 1
 )(
   input         CLOCK_50,
   input         reset,
@@ -51,7 +52,8 @@ module RV32I_ExternalDmem_System #(
   assign dmem_wr_din = write_data;
 
   rv32i_cpu #(
-    .RESET_PC (CPU_RESET_PC)
+    .RESET_PC   (CPU_RESET_PC),
+    .ENABLE_CNN (ENABLE_CNN)
   ) icpu (
     .clk        (clk),
     .reset      (~reset),

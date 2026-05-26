@@ -1,0 +1,45 @@
+VERILATOR ?= verilator
+BUILD_DIR ?= obj_dir_axi
+TOP := RV32I_AxiLite_Top_tb
+TIMEOUT_CYCLES ?= 30000000
+RUN_ARGS ?=
+
+RTL_DIR := ../../src/rtl
+CNN_DIR := $(RTL_DIR)/cnn_alu
+CNN_SRCS := $(wildcard $(CNN_DIR)/*.v)
+
+RTL_SRCS := \
+	$(RTL_DIR)/basic_modules.v \
+	$(RTL_DIR)/rv32i_cpu.v \
+	$(RTL_DIR)/inst_memory.v \
+	$(RTL_DIR)/data_memory.v \
+	$(CNN_SRCS) \
+	$(RTL_DIR)/RV32I_System.v \
+	$(RTL_DIR)/RV32I_AxiLite_Top.v \
+	RV32I_AxiLite_Top_tb.v
+
+VERILATOR_FLAGS := \
+	--binary \
+	--timing \
+	-j 0 \
+	-Mdir $(BUILD_DIR) \
+	--top-module $(TOP) \
+	-GTIMEOUT_CYCLES=$(TIMEOUT_CYCLES) \
+	-Wno-fatal \
+	-Wno-WIDTH \
+	-Wno-UNOPTFLAT \
+	-Wno-UNSIGNED \
+	-Wno-CASEINCOMPLETE \
+	-Wno-LATCH \
+	-Wno-INITIALDLY
+
+.PHONY: all run clean
+
+all:
+	$(VERILATOR) $(VERILATOR_FLAGS) $(RTL_SRCS)
+
+run: all
+	$(BUILD_DIR)/V$(TOP) $(RUN_ARGS)
+
+clean:
+	rm -rf $(BUILD_DIR)

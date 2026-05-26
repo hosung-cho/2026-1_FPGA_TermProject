@@ -3,6 +3,7 @@
 module RV32I_AxiLite_Bram_Top #(
   parameter [31:0] CPU_RESET_PC = 32'h0000_0000,
   parameter [31:0] EXPECTED_DIGIT = 32'd7,
+  parameter integer ENABLE_CNN = 1,
   parameter integer C_S_AXI_ADDR_WIDTH = 6,
   parameter integer C_S_AXI_DATA_WIDTH = 32
 )(
@@ -108,7 +109,8 @@ module RV32I_AxiLite_Bram_Top #(
   wire [(C_S_AXI_DATA_WIDTH/8)-1:0] write_strb = w_hold_valid ? wstrb_hold : s_axi_wstrb;
 
   RV32I_ExternalDmem_System #(
-    .CPU_RESET_PC (CPU_RESET_PC)
+    .CPU_RESET_PC (CPU_RESET_PC),
+    .ENABLE_CNN   (ENABLE_CNN)
   ) u_system (
     .CLOCK_50         (s_axi_aclk),
     .reset            (system_run),

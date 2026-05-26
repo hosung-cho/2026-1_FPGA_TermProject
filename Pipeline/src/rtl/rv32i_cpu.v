@@ -1,7 +1,8 @@
 `timescale 1ns/1ns
 // 최상위 모듈 (Top Module): 제어부(Controller)와 데이터패스(Datapath)를 연결하여 5단계 파이프라인 CPU를 완성합니다.
 module rv32i_cpu #(
-            parameter [31:0] RESET_PC = 32'h1000_0000
+            parameter [31:0] RESET_PC = 32'h1000_0000,
+            parameter integer ENABLE_CNN = 1
 ) (
 		      input         clk, reset,
             output [31:0] pc,		  		// program counter for instruction fetch
@@ -41,7 +42,8 @@ module rv32i_cpu #(
 
   // Instantiate Datapath
   datapath #(
-    .RESET_PC(RESET_PC)
+    .RESET_PC(RESET_PC),
+    .ENABLE_CNN(ENABLE_CNN)
   ) i_datapath(
 		.clk				(clk),
 		.reset			(reset),
@@ -234,7 +236,8 @@ endmodule
 // IF(명령어 인출) -> ID(해독) -> EX(실행) -> MEM(메모리) -> WB(레지스터 쓰기) 의 5단계를 거칩니다.
 //
 module datapath #(
-                parameter [31:0] RESET_PC = 32'h1000_0000
+                parameter [31:0] RESET_PC = 32'h1000_0000,
+                parameter integer ENABLE_CNN = 1
 ) (
                 input         clk, reset,
                 input  [31:0] inst,
@@ -610,7 +613,7 @@ module datapath #(
 
   // CNN custom instruction encoding uses the RISC-V custom-0 opcode.
   // cnn_op[2:0] comes from funct3 and cnn_op[3] comes from funct7[0].
-  assign cnn_ex_active = IDEX_CNNInstr;
+  assign cnn_ex_active = ENABLE_CNN ? IDEX_CNNInstr : 1'b0;
   assign cnn_op = {IDEX_funct7[0], IDEX_funct3};
   assign cnn_wait_stall = cnn_ex_active & ~cnn_result_valid;
 
@@ -648,18 +651,27 @@ module datapath #(
     end
   end
 
-  CNN_ALU_Top i_cnn_alu_top (
-    .ap_clk     (clk),
-    .ap_rst     (reset),
-    .ap_start   (cnn_start_pulse),
-    .ap_done    (cnn_ap_done),
-    .ap_idle    (cnn_ap_idle),
-    .ap_ready   (cnn_ap_ready),
-    .rs1_data_V (cnn_rs1_reg),
-    .rs2_data_V (cnn_rs2_reg),
-    .cnn_op_V   (cnn_op_reg),
-    .rd_data_V  (cnn_rd_data)
-  );
+  generate
+    if (ENABLE_CNN != 0) begin : gen_cnn_alu
+      CNN_ALU_Top i_cnn_alu_top (
+        .ap_clk     (clk),
+        .ap_rst     (reset),
+        .ap_start   (cnn_start_pulse),
+        .ap_done    (cnn_ap_done),
+        .ap_idle    (cnn_ap_idle),
+        .ap_ready   (cnn_ap_ready),
+        .rs1_data_V (cnn_rs1_reg),
+        .rs2_data_V (cnn_rs2_reg),
+        .cnn_op_V   (cnn_op_reg),
+        .rd_data_V  (cnn_rd_data)
+      );
+    end else begin : gen_no_cnn_alu
+      assign cnn_ap_done = 1'b0;
+      assign cnn_ap_idle = 1'b1;
+      assign cnn_ap_ready = 1'b0;
+      assign cnn_rd_data = 32'b0;
+    end
+  endgenerate
 
   // 1st source to ALU (alusrc1) - EX stage
   always@(*)

@@ -1,8 +1,24 @@
-set script_dir [file dirname [info script]]
-set root_dir   [file join $script_dir ".." ".."]
-set build_dir  "C:/rv32i_lcd_extbram_bd_impl"
-set artifact_dir [file join $script_dir "build_ps_lcd_extbram_bd_impl"]
-set report_dir [file join $script_dir "reports_ps_lcd_extbram_bd_impl"]
+set script_dir [file normalize [file dirname [info script]]]
+set root_dir   [file normalize [file join $script_dir ".." ".."]]
+set build_name ""
+set imem_source [file join $root_dir "FPGA_proj" "firmware" "lenet_infer_imem.hex"]
+set enable_cnn 1
+if {[info exists ::env(RV32I_BUILD_NAME)] && $::env(RV32I_BUILD_NAME) ne ""} {
+  set build_name $::env(RV32I_BUILD_NAME)
+}
+if {[info exists ::env(RV32I_IMEM_HEX)] && $::env(RV32I_IMEM_HEX) ne ""} {
+  set imem_source $::env(RV32I_IMEM_HEX)
+}
+if {[info exists ::env(RV32I_ENABLE_CNN)] && $::env(RV32I_ENABLE_CNN) ne ""} {
+  set enable_cnn $::env(RV32I_ENABLE_CNN)
+}
+set build_suffix ""
+if {$build_name ne ""} {
+  set build_suffix "_$build_name"
+}
+set build_dir  "C:/rv32i_lcd_extbram${build_suffix}_bd_impl"
+set artifact_dir [file join $script_dir "build_ps_lcd_extbram${build_suffix}_bd_impl"]
+set report_dir [file join $script_dir "reports_ps_lcd_extbram${build_suffix}_bd_impl"]
 set part_name  "xc7z020clg484-1"
 set rv32i_axi_baseaddr "0x43C00000"
 set dmem_axi_baseaddr  "0x43C40000"
@@ -14,8 +30,11 @@ file mkdir $artifact_dir
 file mkdir $report_dir
 cd $script_dir
 
-file copy -force [file join $root_dir "FPGA_proj" "firmware" "lenet_infer_imem.hex"] [file join $script_dir "imem.hex"]
+file copy -force $imem_source [file join $script_dir "imem.hex"]
 file copy -force [file join $root_dir "FPGA_proj" "firmware" "lenet_digit7_dmem.mem"] [file join $script_dir "lenet_digit7_dmem.mem"]
+puts "RV32I_IMEM_SOURCE=$imem_source"
+puts "RV32I_BUILD_NAME=$build_name"
+puts "RV32I_ENABLE_CNN=$enable_cnn"
 
 set mem_file [file join $script_dir "lenet_digit7_dmem.mem"]
 set coe_file [file join $script_dir "lenet_digit7_dmem.coe"]
@@ -53,16 +72,20 @@ set rtl_files [list \
   [file join $root_dir "Pipeline" "src" "rtl" "basic_modules.v"] \
   [file join $root_dir "Pipeline" "src" "rtl" "rv32i_cpu.v"] \
   [file join $root_dir "Pipeline" "src" "rtl" "inst_memory.v"] \
-  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "mac_pack4_delta.v"] \
-  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "CNN_ALU_Top_mac_mdEe.v"] \
-  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "CNN_ALU_Top_mux_3bkb.v"] \
-  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "CNN_ALU_Top_mux_8cud.v"] \
-  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "CNN_ALU_Top.v"] \
   [file join $root_dir "Pipeline" "src" "rtl" "RV32I_ExternalDmem_System.v"] \
   [file join $root_dir "Pipeline" "src" "rtl" "RV32I_AxiLite_Bram_Top.v"] \
   [file join $root_dir "Pipeline" "src" "rtl" "BramPortA_RunMux.v"] \
   [file join $root_dir "Pipeline" "src" "rtl" "TFTLCD_AxiLite_Top.v"] \
 ]
+if {$enable_cnn != 0} {
+  set rtl_files [concat $rtl_files [list \
+  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "mac_pack4_delta.v"] \
+  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "CNN_ALU_Top_mac_mdEe.v"] \
+  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "CNN_ALU_Top_mux_3bkb.v"] \
+  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "CNN_ALU_Top_mux_8cud.v"] \
+  [file join $root_dir "Pipeline" "src" "rtl" "cnn_alu" "CNN_ALU_Top.v"] \
+  ]]
+}
 add_files -norecurse $rtl_files
 add_files -fileset constrs_1 -norecurse [file join $script_dir "tft_lcd.xdc"]
 add_files -norecurse [list [file join $script_dir "imem.hex"] $coe_file]
@@ -94,6 +117,7 @@ set_property -dict [list CONFIG.NUM_MI {3} CONFIG.NUM_SI {1}] [get_bd_cells axi_
 
 create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps7_0_100M
 create_bd_cell -type module -reference RV32I_AxiLite_Bram_Top rv32i_bram_axi_0
+set_property -dict [list CONFIG.ENABLE_CNN $enable_cnn] [get_bd_cells rv32i_bram_axi_0]
 create_bd_cell -type module -reference TFTLCD_AxiLite_Top tftlcd_axi_0
 create_bd_cell -type module -reference BramPortA_RunMux bram_porta_mux_0
 create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0

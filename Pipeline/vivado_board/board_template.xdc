@@ -2,7 +2,9 @@
 ## Target FPGA part: xc7z020clg484-1
 
 ## Clock input connected to RV32I_Board_Top.CLOCK_50.
-## Use the actual oscillator period. For a 100 MHz board clock, keep 10.000 ns.
+## Use the actual oscillator period:
+## - 100 MHz clock: 10.000 ns
+## -  50 MHz clock: 20.000 ns
 create_clock -period 10.000 -name sys_clk [get_ports CLOCK_50]
 # set_property PACKAGE_PIN <CLK_PIN> [get_ports CLOCK_50]
 # set_property IOSTANDARD LVCMOS33 [get_ports CLOCK_50]

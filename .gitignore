@@ -60,6 +60,7 @@ Pipeline/sim_tflm/sim.log
 .Xil/
 **/.Xil/
 **/build/
+**/build_*/
 **/csim/build/
 **/impl/
 **/syn/
@@ -77,3 +78,6 @@ __pycache__/
 
 # local worktrees
 .worktree-*/
+
+# large third-party board package copied for local reference
+SoC설계 및 프로그래밍 텀프로젝트/제조사 source code/Education.zip
